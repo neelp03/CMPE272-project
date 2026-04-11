@@ -1,0 +1,10 @@
+node_modules/
+*.log
+.env
+.DS_Store
+docker-image.tar.gz
+/reports/
+coverage/
+dashboard/node_modules/
+dashboard/dist/
+Pr.txt

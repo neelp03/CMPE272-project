@@ -1,0 +1,339 @@
+# ============================================================
+# DevSecOps Pipeline
+# Runs on every push/PR:
+#   1. npm audit         — dependency vulnerability scan
+#   2. SonarCloud        — SAST (static analysis)
+#   3. Docker build      — builds the container image
+#   4. Trivy             — container image vulnerability scan
+#   5. OWASP ZAP         — DAST (dynamic analysis)
+#   6. Dashboard deploy  — aggregates all reports → GitHub Pages
+# ============================================================
+
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: vulnerable-api
+  NODE_VERSION: "18"
+  # ──────────────────────────────────────────────────────────
+  # ADJUST: port your Express app listens on
+  APP_PORT: 3000
+
+permissions:
+  contents: read        # checkout
+  security-events: write  # SARIF upload to GitHub Security tab
+  issues: write           # ZAP action may open issues (disabled below)
+
+# ============================================================
+# JOB 1 — Dependency Scan (npm audit)
+# ============================================================
+jobs:
+  dependency-scan:
+    name: "Dependency Scan (npm audit)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        # '|| true' keeps the pipeline green — we report, not block
+        run: |
+          mkdir -p reports
+          npm audit --json > reports/npm-audit.json || true
+
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: reports/npm-audit.json
+          retention-days: 30
+
+# ============================================================
+# JOB 2 — SAST (SonarCloud)
+# Prerequisite: SONAR_TOKEN secret in repo Settings → Secrets → Actions
+# Project key and org are hardcoded from your SonarCloud setup.
+# ============================================================
+  sast:
+    name: "SAST (SonarCloud)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history required for blame/new-code detection
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # Fetch issues via SonarCloud REST API so the dashboard can display them.
+      # Falls back to an empty list if something goes wrong.
+      - name: Export SonarCloud issues
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mkdir -p reports
+          curl -s -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/issues/search\
+?projectKeys=neelp03_CMPE272-project\
+&organization=neelp03\
+&resolved=false\
+&ps=500" \
+            -o reports/sonar-issues.json \
+          || echo '{"issues":[],"total":0}' > reports/sonar-issues.json
+
+      - name: Upload SonarCloud report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-report
+          path: reports/sonar-issues.json
+          retention-days: 30
+
+# ============================================================
+# JOB 3 — Build Docker Image
+# Produces a cached tarball used by Trivy and DAST jobs.
+# ============================================================
+  build:
+    name: "Build Docker Image"
+    runs-on: ubuntu-latest
+    outputs:
+      image-ref: ${{ steps.tag.outputs.ref }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image reference
+        id: tag
+        run: echo "ref=${{ env.IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        run: docker build -t "${{ steps.tag.outputs.ref }}" .
+
+      - name: Save image to tarball
+        run: docker save "${{ steps.tag.outputs.ref }}" | gzip > docker-image.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: docker-image.tar.gz
+          retention-days: 1   # only needed within this pipeline run
+
+# ============================================================
+# JOB 4 — Container Scan (Trivy)
+# Scans the Docker image for OS-level and library CVEs.
+# ============================================================
+  trivy-scan:
+    name: "Container Scan (Trivy)"
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load < docker-image.tar.gz
+
+      # Upload SARIF so findings appear in the GitHub Security tab
+      - name: Run Trivy (SARIF output → Security tab)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ needs.build.outputs.image-ref }}
+          format: sarif
+          output: trivy.sarif
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          exit-code: "0"   # don't fail the pipeline
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+
+      # Also produce a JSON report for the dashboard
+      - name: Run Trivy (JSON output → dashboard)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ needs.build.outputs.image-ref }}
+          format: json
+          output: trivy-report.json
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          exit-code: "0"
+
+      - name: Upload Trivy JSON report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
+          retention-days: 30
+
+# ============================================================
+# JOB 5 — DAST (OWASP ZAP Full Scan)
+# Starts the Node.js app directly on the runner so ZAP
+# (which runs with --network host) can reach localhost:$APP_PORT.
+# ============================================================
+  dast:
+    name: "DAST (OWASP ZAP)"
+    needs: build  # ensures image artifact is available (used for consistency)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ADJUST: change 'npm start' to however your app is launched
+      # (e.g., 'node server.js', 'node src/index.js')
+      - name: Start application
+        run: |
+          npm start &
+          echo "APP_PID=$!" >> "$GITHUB_ENV"
+
+          echo "Waiting for app on port ${{ env.APP_PORT }}..."
+          for i in $(seq 1 30); do
+            if curl -sf "http://localhost:${{ env.APP_PORT }}" \
+               || curl -sf "http://localhost:${{ env.APP_PORT }}/health"; then
+              echo "App is ready."
+              break
+            fi
+            echo "  attempt $i/30…"
+            sleep 2
+          done
+
+      - name: OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target: "http://localhost:${{ env.APP_PORT }}"
+          # 'fail_action: false' keeps the pipeline green even when
+          # vulnerabilities are found (we want to see them, not block on them)
+          fail_action: false
+          allow_issue_writing: false
+          cmd_options: "-J zap-report.json"
+
+      - name: Stop application
+        if: always()
+        run: kill "$APP_PID" 2>/dev/null || true
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-report.json
+          retention-days: 30
+
+# ============================================================
+# JOB 6 — Aggregate Reports & Deploy Security Dashboard
+# Downloads all JSON reports, injects pipeline metadata,
+# builds the React dashboard, and deploys to GitHub Pages.
+# Runs with 'if: always()' so the dashboard is built even
+# when one of the scan jobs fails.
+# ============================================================
+  deploy-dashboard:
+    name: "Build & Deploy Security Dashboard"
+    needs: [dependency-scan, sast, trivy-scan, dast]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required by peaceiris/actions-gh-pages
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Pull every *-report artifact into dashboard/public/reports/
+      - name: Download npm audit report
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-audit-report
+          path: dashboard/public/reports
+        continue-on-error: true
+
+      - name: Download SonarCloud report
+        uses: actions/download-artifact@v4
+        with:
+          name: sonar-report
+          path: dashboard/public/reports
+        continue-on-error: true
+
+      - name: Download Trivy report
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-report
+          path: dashboard/public/reports
+        continue-on-error: true
+
+      - name: Download ZAP report
+        uses: actions/download-artifact@v4
+        with:
+          name: zap-report
+          path: dashboard/public/reports
+        continue-on-error: true
+
+      # Write a metadata file the React app can read at runtime
+      - name: Generate pipeline metadata
+        run: |
+          mkdir -p dashboard/public/reports
+          cat > dashboard/public/reports/pipeline-meta.json <<EOF
+          {
+            "runId":      "${{ github.run_id }}",
+            "runNumber":  "${{ github.run_number }}",
+            "commit":     "${{ github.sha }}",
+            "branch":     "${{ github.ref_name }}",
+            "actor":      "${{ github.actor }}",
+            "timestamp":  "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "jobStatus": {
+              "dependencyScan": "${{ needs.dependency-scan.result }}",
+              "sast":           "${{ needs.sast.result }}",
+              "trivyScan":      "${{ needs.trivy-scan.result }}",
+              "dast":           "${{ needs.dast.result }}"
+            }
+          }
+          EOF
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dashboard dependencies
+        working-directory: dashboard
+        run: npm install
+
+      - name: Build dashboard
+        working-directory: dashboard
+        run: npm run build
+        env:
+          # Vite uses VITE_BASE_URL (set in vite.config.js) for GitHub Pages sub-path
+          VITE_BASE_URL: "/${{ github.event.repository.name }}/"
+
+      # Deploy only from main branch pushes; PRs just build as a check
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dashboard/build
+          commit_message: "chore: deploy security dashboard [run ${{ github.run_number }}]"

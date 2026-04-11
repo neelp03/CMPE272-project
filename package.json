@@ -1,0 +1,26 @@
+{
+  "name": "vulnerable-api",
+  "version": "1.0.0",
+  "description": "Intentionally vulnerable Node.js/Express API — DevSecOps demo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "body-parser": "1.19.0",
+    "cors": "2.8.5",
+    "express": "4.17.1",
+    "jsonwebtoken": "8.5.1",
+    "lodash": "4.17.4",
+    "marked": "0.3.6",
+    "node-fetch": "2.6.0",
+    "sqlite3": "5.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

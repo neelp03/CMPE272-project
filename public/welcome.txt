@@ -1,0 +1,6 @@
+Welcome to the Vulnerable API file server.
+
+Intended usage: GET /api/files?name=welcome.txt
+
+Path traversal demo: GET /api/files?name=../../config.js
+                 or: GET /api/files?name=../../etc/passwd

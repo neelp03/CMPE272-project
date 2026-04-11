@@ -1,0 +1,166 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "lodash": {
+      "name": "lodash",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1097670,
+          "name": "lodash",
+          "dependency": "lodash",
+          "title": "Prototype Pollution in lodash",
+          "url": "https://github.com/advisories/GHSA-p6mc-m468-83gw",
+          "severity": "high",
+          "cwe": ["CWE-1321"],
+          "cvss": { "score": 7.4, "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N" },
+          "range": "<4.17.21"
+        },
+        {
+          "source": 1090863,
+          "name": "lodash",
+          "dependency": "lodash",
+          "title": "Command Injection in lodash",
+          "url": "https://github.com/advisories/GHSA-35jh-r3h4-6jhm",
+          "severity": "high",
+          "cwe": ["CWE-77"],
+          "cvss": { "score": 7.2, "vectorString": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H" },
+          "range": "<4.17.21"
+        }
+      ],
+      "effects": [],
+      "range": "<4.17.21",
+      "nodes": ["node_modules/lodash"],
+      "fixAvailable": { "name": "lodash", "version": "4.17.21", "isSemVerMajor": false }
+    },
+    "jsonwebtoken": {
+      "name": "jsonwebtoken",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1093526,
+          "name": "jsonwebtoken",
+          "dependency": "jsonwebtoken",
+          "title": "jsonwebtoken: Insecure implementation of key retrieval function",
+          "url": "https://github.com/advisories/GHSA-hjrf-2m68-5959",
+          "severity": "high",
+          "cwe": ["CWE-305"],
+          "cvss": { "score": 7.6, "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:L" },
+          "range": "<9.0.0"
+        },
+        {
+          "source": 1093528,
+          "name": "jsonwebtoken",
+          "dependency": "jsonwebtoken",
+          "title": "jwt.verify not enforcing algorithm restrictions",
+          "url": "https://github.com/advisories/GHSA-qwph-4952-7xr6",
+          "severity": "high",
+          "cwe": ["CWE-327"],
+          "cvss": { "score": 7.4, "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N" },
+          "range": "<9.0.0"
+        }
+      ],
+      "effects": [],
+      "range": "<9.0.0",
+      "nodes": ["node_modules/jsonwebtoken"],
+      "fixAvailable": { "name": "jsonwebtoken", "version": "9.0.2", "isSemVerMajor": true }
+    },
+    "node-fetch": {
+      "name": "node-fetch",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1092716,
+          "name": "node-fetch",
+          "dependency": "node-fetch",
+          "title": "node-fetch forwards secure headers to untrusted sites",
+          "url": "https://github.com/advisories/GHSA-r683-j2x4-v87g",
+          "severity": "high",
+          "cwe": ["CWE-601"],
+          "cvss": { "score": 8.8, "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:L/A:L" },
+          "range": "<2.6.7"
+        }
+      ],
+      "effects": [],
+      "range": "<2.6.7",
+      "nodes": ["node_modules/node-fetch"],
+      "fixAvailable": { "name": "node-fetch", "version": "2.7.0", "isSemVerMajor": false }
+    },
+    "marked": {
+      "name": "marked",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1011332,
+          "name": "marked",
+          "dependency": "marked",
+          "title": "Marked vulnerable to Inefficient Regular Expression Complexity",
+          "url": "https://github.com/advisories/GHSA-5v2h-r2cx-5xgj",
+          "severity": "moderate",
+          "cwe": ["CWE-400"],
+          "cvss": { "score": 5.3, "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L" },
+          "range": "<=4.0.10"
+        },
+        {
+          "source": 1011331,
+          "name": "marked",
+          "dependency": "marked",
+          "title": "marked does not sanitize HTML — XSS via headings",
+          "url": "https://github.com/advisories/GHSA-rrrm-qjm4-v8hf",
+          "severity": "moderate",
+          "cwe": ["CWE-79"],
+          "cvss": { "score": 6.1, "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N" },
+          "range": "<4.0.0"
+        }
+      ],
+      "effects": [],
+      "range": "<=4.0.10",
+      "nodes": ["node_modules/marked"],
+      "fixAvailable": { "name": "marked", "version": "13.0.3", "isSemVerMajor": true }
+    },
+    "body-parser": {
+      "name": "body-parser",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1099520,
+          "name": "body-parser",
+          "dependency": "body-parser",
+          "title": "body-parser vulnerable to denial of service when url encoding is enabled",
+          "url": "https://github.com/advisories/GHSA-qwcr-r2fm-qrc7",
+          "severity": "moderate",
+          "cwe": ["CWE-405"],
+          "cvss": { "score": 5.3, "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L" },
+          "range": "<1.20.3"
+        }
+      ],
+      "effects": ["express"],
+      "range": "<1.20.3",
+      "nodes": ["node_modules/body-parser"],
+      "fixAvailable": { "name": "express", "version": "4.19.2", "isSemVerMajor": false }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info":     0,
+      "low":      0,
+      "moderate": 2,
+      "high":     4,
+      "critical": 0,
+      "total":    6
+    },
+    "dependencies": {
+      "prod":        9,
+      "dev":         1,
+      "optional":    0,
+      "peer":        0,
+      "peerOptional":0,
+      "total":       10
+    }
+  }
+}
