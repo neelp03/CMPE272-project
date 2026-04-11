@@ -233,7 +233,15 @@ jobs:
           target: ${{ env.ZAP_TARGET }}
           fail_action: false
           allow_issue_writing: false
-          cmd_options: "-J zap-report.json"
+
+      - name: Copy ZAP JSON report
+        if: always()
+        run: |
+          if [ -f report_json.json ]; then
+            cp report_json.json zap-report.json
+          else
+            echo '{"site":[],"@version":"N/A","@generated":"N/A"}' > zap-report.json
+          fi
 
       - name: Stop application
         if: always()
