@@ -1,0 +1,14 @@
+{
+  "runId":      "24290991126",
+  "runNumber":  "4",
+  "commit":     "aa318b0f53594cfa36f72bcbaeb9cee2acea513d",
+  "branch":     "main",
+  "actor":      "neelp03",
+  "timestamp":  "2026-04-11T20:34:05Z",
+  "jobStatus": {
+    "dependencyScan": "success",
+    "sast":           "failure",
+    "trivyScan":      "success",
+    "dast":           "failure"
+  }
+}
