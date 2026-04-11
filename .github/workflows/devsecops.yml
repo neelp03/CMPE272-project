@@ -88,12 +88,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mkdir -p reports
-          curl -s -u "${SONAR_TOKEN}:" \
-            "https://sonarcloud.io/api/issues/search\
-?projectKeys=neelp03_CMPE272-project\
-&organization=neelp03\
-&resolved=false\
-&ps=500" \
+          SONAR_URL="https://sonarcloud.io/api/issues/search?projectKeys=neelp03_CMPE272-project&organization=neelp03&resolved=false&ps=500"
+          curl -s -u "${SONAR_TOKEN}:" "${SONAR_URL}" \
             -o reports/sonar-issues.json \
           || echo '{"issues":[],"total":0}' > reports/sonar-issues.json
 
