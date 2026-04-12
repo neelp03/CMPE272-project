@@ -1,216 +1,115 @@
 {
-  "@version": "D-2026-04-08",
-  "@generated": "Tue, 8 Apr 2026 12:30:00",
-  "site": [
-    {
-      "@name": "http://localhost:3000",
-      "@host": "localhost",
-      "@port": "3000",
-      "@ssl": "false",
-      "alerts": [
-        {
-          "pluginid": "40018",
-          "alertRef": "40018",
-          "alert": "SQL Injection",
-          "name": "SQL Injection",
-          "riskcode": "3",
-          "confidence": "2",
-          "riskdesc": "High (Medium)",
-          "desc": "<p>SQL injection may be possible. The page results were successfully manipulated using the boolean conditions.</p>",
-          "instances": [
-            {
-              "uri": "http://localhost:3000/api/auth/login",
-              "method": "POST",
-              "param": "username",
-              "attack": "' OR '1'='1",
-              "evidence": "admin"
-            },
-            {
-              "uri": "http://localhost:3000/api/products/search",
-              "method": "GET",
-              "param": "q",
-              "attack": "' OR '1'='1",
-              "evidence": "Laptop Pro"
-            }
-          ],
-          "count": "2",
-          "solution": "<p>Do not trust client side input, even if there is client side validation in place. Use parameterised queries or prepared statements.</p>",
-          "reference": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
-          "cweid": "89",
-          "wascid": "19",
-          "sourceid": "1"
-        },
-        {
-          "pluginid": "40012",
-          "alertRef": "40012",
-          "alert": "Cross Site Scripting (Reflected)",
-          "name": "Cross Site Scripting (Reflected)",
-          "riskcode": "3",
-          "confidence": "2",
-          "riskdesc": "High (Medium)",
-          "desc": "<p>Cross-site Scripting (XSS) is an attack technique that involves echoing attacker-supplied code into a user's browser.</p>",
-          "instances": [
-            {
-              "uri": "http://localhost:3000/api/products/search?q=%3Cscript%3Ealert%281%29%3C%2Fscript%3E",
-              "method": "GET",
-              "param": "q",
-              "attack": "<script>alert(1)</script>",
-              "evidence": "<script>alert(1)</script>"
-            }
-          ],
-          "count": "1",
-          "solution": "<p>Validate all user input and encode all output. Use a Content Security Policy header.</p>",
-          "reference": "https://owasp.org/www-community/attacks/xss/",
-          "cweid": "79",
-          "wascid": "8",
-          "sourceid": "1"
-        },
-        {
-          "pluginid": "6",
-          "alertRef": "6",
-          "alert": "Path Traversal",
-          "name": "Path Traversal",
-          "riskcode": "2",
-          "confidence": "2",
-          "riskdesc": "Medium (Medium)",
-          "desc": "<p>The Path Traversal attack technique allows an attacker access to files, directories, and commands that potentially reside outside the web document root directory.</p>",
-          "instances": [
-            {
-              "uri": "http://localhost:3000/api/files?name=../../package.json",
-              "method": "GET",
-              "param": "name",
-              "attack": "../../package.json",
-              "evidence": "\"name\": \"vulnerable-api\""
-            }
-          ],
-          "count": "1",
-          "solution": "<p>Assume all input is malicious. Use an acceptance list of allowed file paths rather than denying specific paths.</p>",
-          "reference": "https://owasp.org/www-community/attacks/Path_Traversal",
-          "cweid": "22",
-          "wascid": "33",
-          "sourceid": "1"
-        },
-        {
-          "pluginid": "90022",
-          "alertRef": "90022",
-          "alert": "Application Error Disclosure",
-          "name": "Application Error Disclosure",
-          "riskcode": "2",
-          "confidence": "2",
-          "riskdesc": "Medium (Medium)",
-          "desc": "<p>The response appears to contain an application error message. This can reveal sensitive information about the application's internals including SQL query details.</p>",
-          "instances": [
-            {
-              "uri": "http://localhost:3000/api/auth/login",
-              "method": "POST",
-              "param": "",
-              "attack": "",
-              "evidence": "\"query\": \"SELECT * FROM users WHERE username='"
-            }
-          ],
-          "count": "1",
-          "solution": "<p>Review the application's error handling. Do not expose sensitive information in error responses.</p>",
-          "cweid": "209",
-          "wascid": "13",
-          "sourceid": "1"
-        },
-        {
-          "pluginid": "10202",
-          "alertRef": "10202",
-          "alert": "Absence of Anti-CSRF Tokens",
-          "name": "Absence of Anti-CSRF Tokens",
-          "riskcode": "2",
-          "confidence": "1",
-          "riskdesc": "Medium (Low)",
-          "desc": "<p>No Anti-CSRF tokens were found in a HTML submission form. A cross-site request forgery attack may be possible.</p>",
-          "instances": [
-            {
-              "uri": "http://localhost:3000/api/auth/login",
-              "method": "POST",
-              "param": "",
-              "attack": "",
-              "evidence": ""
-            }
-          ],
-          "count": "1",
-          "solution": "<p>Phase: Architecture and Design. Use a vetted library or framework that does not allow this weakness. Use CSRF token pattern.</p>",
-          "cweid": "352",
-          "wascid": "9",
-          "sourceid": "1"
-        },
-        {
-          "pluginid": "10016",
-          "alertRef": "10016",
-          "alert": "Web Browser XSS Protection Not Enabled",
-          "name": "Web Browser XSS Protection Not Enabled",
-          "riskcode": "1",
-          "confidence": "2",
-          "riskdesc": "Low (Medium)",
-          "desc": "<p>Web Browser XSS Protection is not enabled or is disabled by the configuration of the 'X-XSS-Protection' HTTP response header.</p>",
-          "instances": [
-            { "uri": "http://localhost:3000/", "method": "GET", "param": "", "attack": "", "evidence": "" }
-          ],
-          "count": "1",
-          "solution": "<p>Ensure that the web browser's XSS filter is enabled by setting the X-XSS-Protection HTTP response header to '1'.</p>",
-          "cweid": "933",
-          "wascid": "14",
-          "sourceid": "3"
-        },
-        {
-          "pluginid": "10020",
-          "alertRef": "10020",
-          "alert": "X-Frame-Options Header Not Set",
-          "name": "X-Frame-Options Header Not Set",
-          "riskcode": "1",
-          "confidence": "2",
-          "riskdesc": "Low (Medium)",
-          "desc": "<p>X-Frame-Options header is not included in the HTTP response to protect against 'ClickJacking' attacks.</p>",
-          "instances": [
-            { "uri": "http://localhost:3000/", "method": "GET", "param": "", "attack": "", "evidence": "" }
-          ],
-          "count": "1",
-          "solution": "<p>Most modern Web browsers support the X-Frame-Options HTTP header. Ensure it's set on all web pages returned by your site.</p>",
-          "cweid": "1021",
-          "wascid": "15",
-          "sourceid": "3"
-        },
-        {
-          "pluginid": "10035",
-          "alertRef": "10035",
-          "alert": "Strict-Transport-Security Header Not Set",
-          "name": "Strict-Transport-Security Header Not Set",
-          "riskcode": "1",
-          "confidence": "3",
-          "riskdesc": "Low (High)",
-          "desc": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism. The server does not send an HSTS header.</p>",
-          "instances": [
-            { "uri": "http://localhost:3000/", "method": "GET", "param": "", "attack": "", "evidence": "" }
-          ],
-          "count": "1",
-          "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
-          "cweid": "319",
-          "wascid": "15",
-          "sourceid": "3"
-        },
-        {
-          "pluginid": "10021",
-          "alertRef": "10021",
-          "alert": "X-Content-Type-Options Header Missing",
-          "name": "X-Content-Type-Options Header Missing",
-          "riskcode": "0",
-          "confidence": "2",
-          "riskdesc": "Informational (Medium)",
-          "desc": "<p>The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'.</p>",
-          "instances": [
-            { "uri": "http://localhost:3000/api/products", "method": "GET", "param": "", "attack": "", "evidence": "" }
-          ],
-          "count": "1",
-          "solution": "<p>Ensure that the application/web server sets the Content-Type header appropriately. Set the X-Content-Type-Options header to 'nosniff'.</p>",
-          "cweid": "693",
-          "wascid": "15",
-          "sourceid": "3"
-        }
-      ]
-    }
-  ]
+	"@programName": "ZAP",
+	"@version": "2.17.0",
+	"@generated": "Sun, 12 Apr 2026 02:11:45",
+	"created": "2026-04-12T02:11:45.985526051Z",
+	"insights":[
+		{
+			"level": "Low",
+			"reason": "Warning",
+			"site": "",
+			"key": "insight.log.warn",
+			"description": "ZAP warnings logged - see the zap.log file for details",
+			"statistic": "107"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "",
+			"key": "insight.network.failure",
+			"description": "Percentage of network failures",
+			"statistic": "89"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://10.1.0.1:3000",
+			"key": "insight.endpoint.ctype.text/plain",
+			"description": "Percentage of endpoints with content type text/plain",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://10.1.0.1:3000",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://10.1.0.1:3000",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "1"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://10.1.0.1:3000",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://10.1.0.1:3000",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "1"
+		}
+	],
+	"site":[ 
+		{
+			"@name": "https://10.1.0.1:3000",
+			"@host": "10.1.0.1",
+			"@port": "3000",
+			"@ssl": "true",
+			"alerts": [ 
+			]
+		},
+		{
+			"@name": "http://10.1.0.1:3000",
+			"@host": "10.1.0.1",
+			"@port": "3000",
+			"@ssl": "false",
+			"alerts": [ 
+				{
+					"pluginid": "10106",
+					"alertRef": "10106",
+					"alert": "HTTP Only Site",
+					"name": "HTTP Only Site",
+					"riskcode": "2",
+					"confidence": "2",
+					"riskdesc": "Medium (Medium)",
+					"desc": "<p>The site is only served under HTTP and not HTTPS.</p>",
+					"instances":[ 
+						{
+							"id": "0",
+							"uri": "http://10.1.0.1:3000/",
+							"nodeName": "https:\/\/10.1.0.1:3000\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "Failed to connect.\nZAP attempted to connect via: https://10.1.0.1:3000/"
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Configure your web or application server to use SSL (https).</p>",
+					"otherinfo": "<p>Failed to connect.</p><p>ZAP attempted to connect via: https://10.1.0.1:3000/</p>",
+					"reference": "<p>https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html</p><p>https://letsencrypt.org/</p>",
+					"cweid": "311",
+					"wascid": "4",
+					"sourceid": "11"
+				}
+			]
+		}
+	],
+	"sequences":[
+	]
+
 }
