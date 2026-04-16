@@ -1,8 +1,8 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Sun, 12 Apr 2026 02:11:45",
-	"created": "2026-04-12T02:11:45.985526051Z",
+	"@generated": "Thu, 16 Apr 2026 21:31:39",
+	"created": "2026-04-16T21:31:39.030792520Z",
 	"insights":[
 		{
 			"level": "Low",
@@ -10,7 +10,7 @@
 			"site": "",
 			"key": "insight.log.warn",
 			"description": "ZAP warnings logged - see the zap.log file for details",
-			"statistic": "107"
+			"statistic": "109"
 		},
 		{
 			"level": "Info",
@@ -18,7 +18,7 @@
 			"site": "",
 			"key": "insight.network.failure",
 			"description": "Percentage of network failures",
-			"statistic": "89"
+			"statistic": "92"
 		},
 		{
 			"level": "Info",
