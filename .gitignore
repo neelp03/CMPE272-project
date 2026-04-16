@@ -7,4 +7,7 @@ docker-image.tar.gz
 coverage/
 dashboard/node_modules/
 dashboard/dist/
+dashboard/build/
 Pr.txt
+.superdesign
+.claude
