@@ -7,30 +7,45 @@ import TrivyReport    from './components/TrivyReport';
 import ZapReport      from './components/ZapReport';
 
 const NAV = [
-  { id: 'overview', label: 'Overview',       icon: '▦' },
-  { id: 'npm',      label: 'npm audit',       icon: '📦' },
-  { id: 'sonar',    label: 'SonarCloud',      icon: '🔍' },
-  { id: 'trivy',    label: 'Trivy',           icon: '🐳' },
-  { id: 'zap',      label: 'OWASP ZAP',       icon: '⚡' },
+  { id: 'overview', label: 'Command Center',   icon: '▦' },
+  { id: 'npm',      label: 'Dependency Scan',  icon: '📦' },
+  { id: 'sonar',    label: 'Static Analysis',  icon: '🔍' },
+  { id: 'trivy',    label: 'Infrastructure',   icon: '🐳' },
+  { id: 'zap',      label: 'Live Probe',        icon: '⚡' },
 ];
+
+const JOB_LABELS = {
+  dependencyScan: 'npm audit',
+  sast:           'SonarCloud',
+  trivyScan:      'Trivy',
+  dast:           'OWASP ZAP',
+};
 
 export default function App() {
   const [active, setActive] = useState('overview');
   const meta = useReport('pipeline-meta.json');
-
   const status = meta.data?.jobStatus || {};
+
   const statusColor = (s) =>
-    s === 'success' ? 'var(--success)' :
+    s === 'success' ? 'var(--low)'      :
     s === 'failure' ? 'var(--critical)' :
-    s === 'skipped' ? 'var(--info)' : 'var(--text-secondary)';
+    s === 'skipped' ? 'var(--info)'     : 'var(--text-muted)';
+
+  const statusDot = (s) =>
+    s === 'success' ? 'var(--low)'      :
+    s === 'failure' ? 'var(--critical)' :
+    s === 'skipped' ? 'var(--info)'     : '#cbd5e1';
 
   return (
     <div className="layout">
-      {/* ── Sidebar ─────────────────────────────────────── */}
+      {/* scan-line decoration */}
+      <div className="scan-line" />
+
+      {/* ── Sidebar ───────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <span className="brand-icon">🛡</span>
-          <span className="brand-text">DevSecOps</span>
+          <div className="brand-icon">🛡</div>
+          <span className="brand-text">Dev<span>SecOps</span></span>
         </div>
 
         <nav className="sidebar-nav">
@@ -46,13 +61,13 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Pipeline job status badges */}
+        {/* Pipeline job status */}
         {meta.data && (
           <div className="sidebar-status">
-            <p className="sidebar-status-title">Pipeline Jobs</p>
+            <p className="sidebar-status-title">Pipeline Status</p>
             {Object.entries(status).map(([job, result]) => (
               <div key={job} className="status-row">
-                <span className="status-job">{job}</span>
+                <span className="status-job">{JOB_LABELS[job] || job}</span>
                 <span className="status-badge" style={{ color: statusColor(result) }}>
                   {result}
                 </span>
@@ -62,24 +77,32 @@ export default function App() {
         )}
       </aside>
 
-      {/* ── Main content ────────────────────────────────── */}
+      {/* ── Main content ─────────────────────────────────── */}
       <div className="main">
         {/* Top bar */}
         <header className="topbar">
-          <div>
-            <h1 className="topbar-title">Security Dashboard</h1>
+          <div className="topbar-left">
+            <div className="topbar-title-row">
+              <h1 className="topbar-title">Security Intelligence</h1>
+              <span className="topbar-live-badge">Live Threat Matrix</span>
+            </div>
             {meta.data && (
               <p className="topbar-meta">
-                Run&nbsp;<strong>#{meta.data.runNumber}</strong>
-                &nbsp;·&nbsp;
-                <code>{meta.data.commit?.slice(0, 7)}</code>
-                &nbsp;·&nbsp;
-                {meta.data.branch}
-                &nbsp;·&nbsp;
-                {new Date(meta.data.timestamp).toLocaleString()}
+                Branch:&nbsp;<code>{meta.data.branch}</code>
+                &nbsp;·&nbsp;Commit:&nbsp;<code>{meta.data.commit?.slice(0, 7)}</code>
+                &nbsp;·&nbsp;Run&nbsp;<code>#{meta.data.runNumber}</code>
               </p>
             )}
           </div>
+
+          {meta.data && (
+            <div className="topbar-run-info">
+              <span className="topbar-run-label">Last Scanned</span>
+              <span className="topbar-run-value">
+                {new Date(meta.data.timestamp).toLocaleString()}
+              </span>
+            </div>
+          )}
         </header>
 
         {/* Content pane */}
