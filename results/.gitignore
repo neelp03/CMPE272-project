@@ -1,0 +1,3 @@
+# Scan outputs are generated at runtime — don't commit them
+*.json
+!.gitignore

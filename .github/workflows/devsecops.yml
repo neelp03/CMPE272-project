@@ -348,3 +348,15 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dashboard/build
           commit_message: "chore: deploy security dashboard [run ${{ github.run_number }}]"
+
+      # Commit updated reports back to main so Render picks them up on its
+      # next deploy (Render watches the main branch for changes).
+      # [skip ci] prevents an infinite pipeline loop.
+      - name: Commit updated reports for Render
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add dashboard/public/reports/
+          git diff --cached --quiet || git commit -m "chore: update scan reports [skip ci]"
+          git push
