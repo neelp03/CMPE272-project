@@ -63,13 +63,13 @@ and Real-Time Threat Intelligence Dashboard}
 
 % ── Abstract ───────────────────────────────────────────────────────
 \begin{abstract}
-Modern software delivery increasingly demands security assurance at every stage
-of the development lifecycle rather than as a post-deployment afterthought.
+Security is still treated as a final gate in most software delivery pipelines,
+checked just before deployment rather than throughout development.
 This paper presents \emph{SecureShift}, a fully automated DevSecOps pipeline
-that integrates four complementary security scanning disciplines—dependency
-auditing, static application security testing (SAST), container image
-scanning, and dynamic application security testing (DAST)—into a single
-GitHub Actions CI/CD workflow.
+that integrates four scanning disciplines into a single GitHub Actions
+CI/CD workflow: dependency auditing, static application security testing
+(SAST), container image scanning, and dynamic application security testing
+(DAST).
 To demonstrate measurable security improvement, the pipeline is evaluated
 against a purpose-built, intentionally vulnerable Node.js/Express REST API
 containing thirteen documented weaknesses spanning OWASP Top~10 categories
@@ -82,10 +82,9 @@ their security posture.
 A remediated version of the same API (app-fixed) then demonstrates that the
 pipeline can correctly confirm a clean bill of health once all vulnerabilities
 are addressed.
-Our evaluation shows that the four-tool combination surfaces all thirteen
-intentional vulnerabilities with zero configuration beyond a single YAML
-workflow file, confirming the feasibility of shift-left security for teams
-with limited security expertise.
+The four-tool combination surfaces all thirteen vulnerabilities with one
+YAML workflow file and one API token, showing that shift-left security
+is practical for teams without dedicated security staff.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -107,13 +106,12 @@ controls directly into Continuous Integration/Continuous Deployment (CI/CD)
 pipelines so that every code commit is automatically evaluated against a
 portfolio of security checks~\cite{devsecops2019}.
 
-Despite growing industry adoption, many development teams still face
-significant barriers to entry.
+Adoption is growing, but most teams still hit the same barriers.
 Security tooling is fragmented across vendors, output formats are inconsistent,
-and interpreting scanner results requires domain expertise that small
-engineering teams rarely possess.
-This work addresses those barriers with a practical, end-to-end reference
-implementation that any team can deploy with a single GitHub repository.
+and reading scanner results requires expertise that small engineering teams
+rarely have.
+We address those barriers with a reference implementation deployable from
+a single GitHub repository.
 
 \subsection{Contributions}
 
@@ -133,8 +131,8 @@ The primary contributions of this paper are:
         normalizes, and visualizes findings from all four scanners in real time
         and is automatically redeployed to Render on every pipeline run.
 
-  \item A remediated version of VulnAPI (``app-fixed'') demonstrating the
-        end-to-end workflow from vulnerability detection to resolution.
+  \item A remediated version of VulnAPI (``app-fixed'') that demonstrates
+        the end-to-end workflow from detection to resolution.
 \end{enumerate}
 
 \subsection{Paper Organization}
@@ -164,7 +162,7 @@ control for reducing mean time to remediation.
 More recent work by Rajapakse et al.~\cite{rajapakse2022} systematically
 reviewed DevSecOps challenges, identifying tool fragmentation and the absence
 of unified dashboards as the leading inhibitors of adoption.
-Our work directly addresses these gaps.
+This work addresses both gaps.
 
 \subsection{Automated Vulnerability Scanning}
 
@@ -390,21 +388,20 @@ with a full Git history checkout (\texttt{fetch-depth: 0}) to enable
 SonarCloud's new-code and blame analysis features.
 Configuration is provided via \texttt{sonar-project.properties}, specifying
 the project key, organization, and source roots.
-After the scan completes, the job queries the SonarCloud Issues REST API
-(\texttt{/api/issues/search}) to export all open, unresolved findings
-as a structured JSON file that the dashboard can consume.
-This two-phase approach (scan + export) decouples issue ingestion from the
-SonarCloud web UI, enabling the dashboard to surface findings without
-requiring users to log into a separate tool.
+After the scan, the job queries the SonarCloud Issues REST API
+(\texttt{/api/issues/search}) and writes all open, unresolved findings to
+a JSON file.
+This two-phase design (scan then export) separates issue collection from the
+SonarCloud web UI, so the dashboard shows findings without a separate login.
 
 \subsection{Job 3: Docker Image Build}
 
 The Docker build job creates a tagged image
 (\texttt{vulnerable-api:\$\{github.sha\}}) and serializes it to a gzipped
 tarball via \texttt{docker save | gzip}.
-The tarball is uploaded as a short-lived artifact (1-day retention) that is
-shared with the Trivy and DAST jobs, ensuring both scan the exact same image
-that would be deployed to production.
+The tarball is uploaded as a short-lived artifact (1-day retention) and
+shared with the Trivy and DAST jobs, so both scan the exact image that
+would be deployed to production.
 Using the commit SHA as the image tag guarantees immutability and full
 traceability.
 
@@ -610,9 +607,9 @@ and OS-level CVEs in the base image.
 npm audit catches all six dependency CVEs, including transitive ones not
 visible to static analysis.
 
-The tools are complementary rather than redundant.
-No single tool detects all vulnerabilities, validating the multi-layer
-architecture.
+The tools cover different ground.
+No single tool detects all thirteen vulnerabilities, which confirms the
+value of running all four in parallel.
 
 \subsection{Pipeline Execution Metrics}
 
@@ -668,7 +665,7 @@ scan-specific components lazily after their data arrives.
 
 \subsection{Tool Complementarity}
 
-A key finding is that no single scanning tool is sufficient.
+No single scanning tool is sufficient on its own.
 SonarCloud excels at detecting code-level issues such as SQL injection and
 hard-coded secrets because it can trace data flows and recognize anti-patterns
 at the source level.
@@ -679,14 +676,12 @@ Trivy adds a dimension neither SAST nor DAST addresses: the security posture
 of the runtime environment itself—the OS, package manager, and base image.
 npm audit addresses the supply chain attack surface, which is absent from all
 other tools.
-This complementary coverage justifies maintaining all four tools in the
-pipeline despite increased complexity and runtime.
+The coverage difference across tools justifies the added runtime.
 
 \subsection{Developer Experience}
 
-The system is designed to minimize friction.
-The only setup requirement is adding a single \texttt{SONAR\_TOKEN} secret to
-the GitHub repository.
+Setup is minimal: the only external credential required is a \texttt{SONAR\_TOKEN}
+added to the repository secrets.
 All other tools are free and require no account registration.
 Results are surfaced in three places developers already monitor: the
 GitHub Actions UI (per-job logs), the GitHub Security tab (SARIF), and the
@@ -725,7 +720,7 @@ could reduce this to approximately six minutes without sacrificing coverage.
 
 \subsection{Future Work}
 
-Several extensions are planned.
+We plan several extensions.
 First, integrating GitHub Dependabot to automatically open pull requests for
 outdated dependencies would complement the passive reporting of npm audit.
 Second, adding a Software Bill of Materials (SBOM) generation step using
@@ -756,12 +751,10 @@ The remediated \texttt{app-fixed} application confirmed that the pipeline
 correctly transitions from a failing to a passing state once all vulnerabilities
 are addressed, validating the end-to-end workflow.
 
-SecureShift demonstrates that comprehensive security scanning is achievable at
-zero marginal infrastructure cost using freely available tools and GitHub's
-native CI/CD platform.
-The complete implementation is available as an open-source reference at
-\texttt{github.com/neelp03/CMPE272-project} to serve as a practical starting
-point for teams adopting DevSecOps practices.
+SecureShift shows that four-tool security scanning costs nothing beyond
+GitHub's free tier and one API token.
+The full implementation is open source at
+\texttt{github.com/neelp03/CMPE272-project}.
 
 % ── REFERENCES ─────────────────────────────────────────────────────
 \begin{thebibliography}{00}
