@@ -265,13 +265,6 @@ body {
   overflow: hidden;
 }
 .stat-card:hover { box-shadow: var(--shadow); }
-.stat-card-icon {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  font-size: 26px;
-  opacity: 0.07;
-}
 .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 .stat-value { font-family: var(--font-head); font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
 .stat-sub   { font-size: 11px; color: var(--text-secondary); }

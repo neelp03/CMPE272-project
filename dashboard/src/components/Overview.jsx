@@ -218,7 +218,6 @@ export default function Overview() {
       {/* Stat cards */}
       <div className="stat-grid">
         <div className="stat-card">
-          <span className="stat-card-icon">🔎</span>
           <span className="stat-label">Total Findings</span>
           <span className="stat-value" style={{ color: totalFindings>0 ? 'var(--critical)' : 'var(--low)' }}>
             {totalFindings}
@@ -226,7 +225,6 @@ export default function Overview() {
           <span className="stat-sub">across all tools</span>
         </div>
         <div className="stat-card">
-          <span className="stat-card-icon">🔥</span>
           <span className="stat-label">Critical Risks</span>
           <span className="stat-value" style={{ color:'var(--critical)' }}>{totalCritical}</span>
           <span className="stat-sub" style={{ color: totalCritical>0 ? 'var(--critical)' : 'var(--low)' }}>
@@ -239,7 +237,6 @@ export default function Overview() {
           )}
         </div>
         <div className="stat-card">
-          <span className="stat-card-icon">⚠️</span>
           <span className="stat-label">High Alerts</span>
           <span className="stat-value" style={{ color:'var(--high)' }}>{totalHigh}</span>
           <span className="stat-sub">need review</span>
@@ -250,13 +247,11 @@ export default function Overview() {
           )}
         </div>
         <div className="stat-card">
-          <span className="stat-card-icon">📋</span>
           <span className="stat-label">Medium Issues</span>
           <span className="stat-value" style={{ color:'var(--medium)' }}>{totalMedium}</span>
           <span className="stat-sub">monitor closely</span>
         </div>
         <div className="stat-card">
-          <span className="stat-card-icon">✅</span>
           <span className="stat-label">Low / Info</span>
           <span className="stat-value" style={{ color:'var(--low)' }}>{totalLow}</span>
           <span className="stat-sub">informational</span>
@@ -266,11 +261,11 @@ export default function Overview() {
       {/* Tool summary cards */}
       <div className="tool-grid">
         {[
-          { icon:'📦', name:'npm audit',  counts:nc, loading:npm.loading,   error:npm.error   },
-          { icon:'🔍', name:'SonarCloud', counts:sc, loading:sonar.loading, error:sonar.error },
-          { icon:'🐳', name:'Trivy',       counts:tc, loading:trivy.loading, error:trivy.error },
-          { icon:'⚡', name:'OWASP ZAP',  counts:zc, loading:zap.loading,   error:zap.error   },
-        ].map(({ icon, name, counts, loading, error }) => {
+          { name:'npm audit',  counts:nc, loading:npm.loading,   error:npm.error   },
+          { name:'SonarCloud', counts:sc, loading:sonar.loading, error:sonar.error },
+          { name:'Trivy',      counts:tc, loading:trivy.loading, error:trivy.error },
+          { name:'OWASP ZAP',  counts:zc, loading:zap.loading,   error:zap.error   },
+        ].map(({ name, counts, loading, error }) => {
           if (loading) return (
             <div key={name} className="tool-card">
               <p style={{ color:'var(--text-muted)', fontSize:12 }}>Loading…</p>
@@ -281,7 +276,7 @@ export default function Overview() {
           return (
             <div key={name} className="tool-card">
               <div className="tool-card-header">
-                <span className="tool-card-name">{icon} {name}</span>
+                <span className="tool-card-name">{name}</span>
                 <span className="tool-total" style={{
                   color: hasError ? 'var(--text-muted)' :
                          counts.critical>0 ? 'var(--critical)' :
@@ -298,7 +293,7 @@ export default function Overview() {
                   {counts.high>0     && <span className="badge badge-high">H: {counts.high}</span>}
                   {counts.medium>0   && <span className="badge badge-medium">M: {counts.medium}</span>}
                   {counts.low>0      && <span className="badge badge-low">L: {counts.low}</span>}
-                  {t===0 && <span style={{ color:'var(--low)', fontSize:12, fontWeight:600 }}>✓ Clean</span>}
+                  {t===0 && <span style={{ color:'var(--low)', fontSize:12, fontWeight:600 }}>Clean</span>}
                 </div>
               )}
             </div>
@@ -337,7 +332,6 @@ export default function Overview() {
             <div className="threats-list">
               {threats.length === 0 ? (
                 <div className="state-box" style={{ minHeight:120 }}>
-                  <span style={{ fontSize:28 }}>✅</span>
                   <p style={{ fontSize:13 }}>No findings</p>
                 </div>
               ) : threats.map((t, i) => (
