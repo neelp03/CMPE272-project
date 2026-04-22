@@ -54,7 +54,6 @@ export default function NpmAuditReport() {
       {/* Vulnerability table */}
       {vulns.length === 0 ? (
         <div className="state-box">
-          <span className="icon">✅</span>
           <p>No vulnerabilities found</p>
         </div>
       ) : (

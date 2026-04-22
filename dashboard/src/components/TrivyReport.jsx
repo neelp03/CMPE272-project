@@ -60,7 +60,7 @@ export default function TrivyReport() {
 
       {/* One table per scan target */}
       {results.length === 0 ? (
-        <div className="state-box"><span className="icon">✅</span><p>No vulnerabilities found</p></div>
+        <div className="state-box"><p>No vulnerabilities found</p></div>
       ) : (
         results.map((result, idx) => {
           const vulns = result.Vulnerabilities || [];

@@ -64,7 +64,6 @@ export default function SonarReport() {
 
       {issues.length === 0 ? (
         <div className="state-box">
-          <span className="icon">✅</span>
           <p>No open issues found</p>
         </div>
       ) : (
