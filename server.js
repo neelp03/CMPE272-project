@@ -11,7 +11,37 @@ const { PORT }   = require('./config');
 const app = express();
 
 // FIX for VULN-13: helmet adds secure HTTP headers
-app.use(helmet());
+// Additional directives address ZAP findings: CSP fallback, Permissions-Policy
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'"],
+      styleSrc:       ["'self'"],
+      imgSrc:         ["'self'"],
+      connectSrc:     ["'self'"],
+      fontSrc:        ["'self'"],
+      objectSrc:      ["'none'"],
+      frameAncestors: ["'none'"],
+      formAction:     ["'self'"],
+      baseUri:        ["'self'"],
+    },
+  },
+  permissionsPolicy: {
+    features: {
+      camera:      [],
+      microphone:  [],
+      geolocation: [],
+      payment:     [],
+    },
+  },
+}));
+
+// No-cache for all API responses (ZAP: Storable and Cacheable Content)
+app.use((_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // FIX for VULN-03: explicit CORS allowlist (no wildcard, no credentials leak)
 const ALLOWED_ORIGINS = new Set((process.env.CORS_ORIGINS || 'http://localhost:5173').split(','));
