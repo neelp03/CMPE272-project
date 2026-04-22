@@ -85,7 +85,6 @@ export default function App() {
 
   return (
     <div className="layout">
-      <div className="scan-line" />
 
       {/* ── Sidebar ───────────────────────────────────────── */}
       <aside className="sidebar">
