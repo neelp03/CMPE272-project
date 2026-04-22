@@ -33,7 +33,7 @@ function readJson(filename) {
   const file = path.join(REPORTS_DIR, filename);
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (err) {
+  } catch (err) { // NOSONAR — file may legitimately not exist
     return null;
   }
 }

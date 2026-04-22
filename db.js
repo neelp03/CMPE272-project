@@ -21,7 +21,7 @@ const nextId = { users: 5, products: 5, orders: 4 };
   store.users = [
     { id: 1, username: 'admin', password: await bcrypt.hash('admin123',    SALT_ROUNDS), email: 'admin@shopfixed.local', role: 'admin',  balance: 9999.99 },
     { id: 2, username: 'alice', password: await bcrypt.hash('password1',   SALT_ROUNDS), email: 'alice@example.com',     role: 'user',   balance: 150    },
-    { id: 3, username: 'bob',   password: await bcrypt.hash('ilovecats42', SALT_ROUNDS), email: 'bob@example.com',        role: 'user',   balance: 75.50  },
+    { id: 3, username: 'bob',   password: await bcrypt.hash('ilovecats42', SALT_ROUNDS), email: 'bob@example.com',        role: 'user',   balance: 75.5   },
     { id: 4, username: 'carol', password: await bcrypt.hash('qwerty123',   SALT_ROUNDS), email: 'carol@example.com',      role: 'user',   balance: 200    },
   ];
   store.products = [

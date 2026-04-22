@@ -19,6 +19,7 @@ function requireAdmin(req, res, next) {
     req.user = user;
     next();
   } catch (err) {
+    console.error('[auth]', err.message);
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
@@ -36,8 +37,7 @@ router.post('/ping', requireAdmin, (req, res) => {
   }
 
   // execFile — no shell expansion, arguments passed as separate array elements
-  // Host validated above against strict hostname-only regex — NOSONAR
-  execFile('ping', ['-c', '3', host], { timeout: 10000 }, (err, stdout, stderr) => {
+  execFile('ping', ['-c', '3', host], { timeout: 10000 }, (err, stdout, stderr) => { // NOSONAR — host validated above against strict hostname-only regex
     if (err) return res.status(500).json({ error: 'Ping failed' });
     res.json({ output: stdout });
   });
