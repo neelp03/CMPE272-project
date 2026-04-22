@@ -1,52 +1,63 @@
 'use strict';
 
-// VULN-11 — Command Injection via exec() with user-supplied input (CWE-78)
-// VULN-12 — Missing authentication on admin endpoints (CWE-306)
+const express  = require('express');
+const jwt      = require('jsonwebtoken');
+const router   = express.Router();
+const { execFile } = require('child_process');
+const db       = require('../db');
+const { JWT_SECRET } = require('../config');
 
-const express = require('express');
-const router  = express.Router();
-const { exec } = require('child_process');
-const db      = require('../db');
+// FIX for VULN-12: all admin routes require a valid JWT with role=admin
+function requireAdmin(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token  = header.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Authentication required' });
 
-// ⚠ VULN-12: No authentication middleware on ANY of these admin routes.
-// Anyone can call these endpoints without a token.
+  try {
+    const user = jwt.verify(token, JWT_SECRET);
+    if (user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    req.user = user;
+    next();
+  } catch (_) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
 
 // POST /api/admin/ping
-// VULN-11: `host` is passed directly to exec().
-// Attack: host = "127.0.0.1; cat /etc/passwd"
-//         host = "127.0.0.1 && rm -rf /tmp/*"
-router.post('/ping', (req, res) => {
+// FIX for VULN-11: use execFile (not exec) with a validated IP/hostname
+// execFile does NOT invoke a shell, so shell metacharacters are inert
+router.post('/ping', requireAdmin, (req, res) => {
   const { host } = req.body;
   if (!host) return res.status(400).json({ error: 'host required' });
 
-  // ⚠ VULNERABLE: shell interpolation allows arbitrary command execution
-  exec(`ping -c 3 ${host}`, (err, stdout, stderr) => {
-    if (err) {
-      return res.status(500).json({ error: err.message, stderr });
-    }
+  // Strict validation: allow only hostname-safe characters
+  if (!/^[a-zA-Z0-9.\-]{1,253}$/.test(host)) {
+    return res.status(400).json({ error: 'Invalid host' });
+  }
+
+  // execFile — no shell expansion, arguments passed as separate array elements
+  execFile('ping', ['-c', '3', host], { timeout: 10000 }, (err, stdout, stderr) => {
+    if (err) return res.status(500).json({ error: 'Ping failed' });
     res.json({ output: stdout });
   });
 });
 
-// GET /api/admin/users — dump all users (VULN-12 + VULN-07)
-router.get('/users', (_req, res) => {
-  db.all('SELECT * FROM users', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows); // passwords included
+// GET /api/admin/users — admin only, passwords stripped
+router.get('/users', requireAdmin, (_req, res) => {
+  db.getAllUsers((err, rows) => {
+    if (err) return res.status(500).json({ error: 'Internal server error' });
+    res.json(rows.map(({ password, ...safe }) => safe));
   });
 });
 
-// DELETE /api/admin/users/:id — delete any user without auth (VULN-12)
-router.delete('/users/:id', (req, res) => {
-  db.run('DELETE FROM users WHERE id = ?', [req.params.id], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ deleted: this.changes });
+// DELETE /api/admin/users/:id — admin only
+router.delete('/users/:id', requireAdmin, (req, res) => {
+  db.deleteUser(req.params.id, (err, changes) => {
+    if (err) return res.status(500).json({ error: 'Internal server error' });
+    res.json({ deleted: changes });
   });
 });
 
-// GET /api/admin/env — leaks all environment variables (VULN-12)
-router.get('/env', (_req, res) => {
-  res.json(process.env);
-});
+// /api/admin/env removed — leaking process.env is never acceptable
 
 module.exports = router;

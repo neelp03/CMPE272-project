@@ -1,69 +1,83 @@
 'use strict';
 
-// VULN-04 — SQL Injection in login (CWE-89)
-// VULN-05 — Error response leaks the full SQL query (CWE-209)
+const express      = require('express');
+const jwt          = require('jsonwebtoken');
+const rateLimit    = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+const router       = express.Router();
+const db           = require('../db');
+const { JWT_SECRET, JWT_EXPIRY } = require('../config');
 
-const express = require('express');
-const jwt     = require('jsonwebtoken');
-const router  = express.Router();
-const db      = require('../db');
-const { JWT_SECRET } = require('../config');
+// FIX for VULN-08: rate-limit login to 10 attempts per 15 minutes
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // POST /api/auth/login
-// VULN-04: username and password are interpolated directly into the SQL string.
-// Sending username = admin'-- bypasses password verification entirely.
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
+router.post(
+  '/login',
+  loginLimiter,
+  [
+    body('username').isString().trim().notEmpty(),
+    body('password').isString().notEmpty(),
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Invalid input' });
+    }
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'username and password required' });
+    const { username, password } = req.body;
+
+    // FIX for VULN-04: bcrypt compare via secure db method — no SQL involved
+    // FIX for VULN-05: errors never expose query text
+    db.getUserByCredentials(username, password, (err, user) => {
+      if (err) return res.status(500).json({ error: 'Internal server error' });
+      if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+      // FIX for VULN-01: secret from env; FIX for missing expiry: expiresIn set
+      const token = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+      );
+
+      res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
+    });
   }
-
-  // ⚠ VULNERABLE: string concatenation instead of parameterised query
-  const sql = `SELECT * FROM users
-               WHERE username = '${username}'
-                 AND password = '${password}'`;
-
-  db.get(sql, (err, user) => {
-    if (err) {
-      // VULN-05: full query (including injected payload) returned to the client
-      return res.status(500).json({ error: err.message, query: sql });
-    }
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // VULN-01 (from config.js): JWT_SECRET = 'supersecret123'
-    // No expiry set → tokens live forever
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
-      JWT_SECRET
-    );
-
-    res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
-  });
-});
+);
 
 // POST /api/auth/register
-// Also vulnerable to SQL injection (same pattern)
-router.post('/register', (req, res) => {
-  const { username, password, email } = req.body;
-
-  if (!username || !password || !email) {
-    return res.status(400).json({ error: 'username, password, and email required' });
-  }
-
-  // ⚠ VULNERABLE: string interpolation
-  const sql = `INSERT INTO users (username, password, email)
-               VALUES ('${username}', '${password}', '${email}')`;
-
-  db.run(sql, function (err) {
-    if (err) {
-      return res.status(500).json({ error: err.message, query: sql }); // VULN-05
+router.post(
+  '/register',
+  [
+    body('username').isString().trim().isLength({ min: 3, max: 32 }),
+    body('password').isString().isLength({ min: 8 }),
+    body('email').isEmail().normalizeEmail(),
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Invalid input', details: errors.array() });
     }
-    res.status(201).json({ message: 'User created', id: this.lastID });
-  });
-});
+
+    const { username, password, email } = req.body;
+
+    // FIX for VULN-03 (plaintext storage): bcrypt hash handled inside db.createUser
+    db.createUser(username, password, email, (err, id) => {
+      if (err) {
+        if (err.message === 'Username already taken') {
+          return res.status(409).json({ error: err.message });
+        }
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+      res.status(201).json({ message: 'User created', id });
+    });
+  }
+);
 
 module.exports = router;

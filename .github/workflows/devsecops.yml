@@ -202,6 +202,8 @@ jobs:
         run: npm install
 
       - name: Start application
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-demo-secret-not-for-production' }}
         run: |
           npm start &
           echo "APP_PID=$!" >> "$GITHUB_ENV"
