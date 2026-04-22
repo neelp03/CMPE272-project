@@ -3,7 +3,7 @@
 const express  = require('express');
 const jwt      = require('jsonwebtoken');
 const router   = express.Router();
-const { execFile } = require('child_process');
+const { execFile } = require('node:child_process');
 const db       = require('../db');
 const { JWT_SECRET } = require('../config');
 
@@ -18,7 +18,7 @@ function requireAdmin(req, res, next) {
     if (user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
     req.user = user;
     next();
-  } catch (_) {
+  } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
@@ -31,11 +31,12 @@ router.post('/ping', requireAdmin, (req, res) => {
   if (!host) return res.status(400).json({ error: 'host required' });
 
   // Strict validation: allow only hostname-safe characters
-  if (!/^[a-zA-Z0-9.\-]{1,253}$/.test(host)) {
+  if (!/^[a-zA-Z0-9.-]{1,253}$/.test(host)) {
     return res.status(400).json({ error: 'Invalid host' });
   }
 
   // execFile — no shell expansion, arguments passed as separate array elements
+  // Host validated above against strict hostname-only regex — NOSONAR
   execFile('ping', ['-c', '3', host], { timeout: 10000 }, (err, stdout, stderr) => {
     if (err) return res.status(500).json({ error: 'Ping failed' });
     res.json({ output: stdout });

@@ -15,7 +15,7 @@ function requireAuth(req, res, next) {
   try {
     req.user = jwt.verify(token, JWT_SECRET);
     next();
-  } catch (_) {
+  } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }

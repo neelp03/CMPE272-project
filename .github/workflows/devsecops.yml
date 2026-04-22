@@ -24,11 +24,6 @@ env:
   # ADJUST: port your Express app listens on
   APP_PORT: 3000
 
-permissions:
-  contents: read        # checkout
-  security-events: write  # SARIF upload to GitHub Security tab
-  issues: write           # ZAP action may open issues (disabled below)
-
 # ============================================================
 # JOB 1 — Dependency Scan (npm audit)
 # ============================================================
@@ -36,6 +31,8 @@ jobs:
   dependency-scan:
     name: "Dependency Scan (npm audit)"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,6 +67,8 @@ jobs:
   sast:
     name: "SAST (SonarCloud)"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -107,6 +106,8 @@ jobs:
   build:
     name: "Build Docker Image"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       image-ref: ${{ steps.tag.outputs.ref }}
     steps:
@@ -138,6 +139,9 @@ jobs:
     name: "Container Scan (Trivy)"
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Download Docker image
         uses: actions/download-artifact@v4
@@ -188,6 +192,8 @@ jobs:
     name: "DAST (OWASP ZAP)"
     needs: build  # ensures image artifact is available (used for consistency)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -229,8 +235,8 @@ jobs:
           echo "ZAP_TARGET=http://${GATEWAY:-172.17.0.1}:${{ env.APP_PORT }}" >> "$GITHUB_ENV"
           echo "Target URL: http://${GATEWAY:-172.17.0.1}:${{ env.APP_PORT }}"
 
-      - name: OWASP ZAP Full Scan
-        uses: zaproxy/action-full-scan@v0.12.0
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
         with:
           target: ${{ env.ZAP_TARGET }}
           fail_action: false

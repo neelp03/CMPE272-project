@@ -20,9 +20,9 @@ const nextId = { users: 5, products: 5, orders: 4 };
 (async () => {
   store.users = [
     { id: 1, username: 'admin', password: await bcrypt.hash('admin123',    SALT_ROUNDS), email: 'admin@shopfixed.local', role: 'admin',  balance: 9999.99 },
-    { id: 2, username: 'alice', password: await bcrypt.hash('password1',   SALT_ROUNDS), email: 'alice@example.com',     role: 'user',   balance: 150.00  },
-    { id: 3, username: 'bob',   password: await bcrypt.hash('ilovecats42', SALT_ROUNDS), email: 'bob@example.com',        role: 'user',   balance: 75.50   },
-    { id: 4, username: 'carol', password: await bcrypt.hash('qwerty123',   SALT_ROUNDS), email: 'carol@example.com',      role: 'user',   balance: 200.00  },
+    { id: 2, username: 'alice', password: await bcrypt.hash('password1',   SALT_ROUNDS), email: 'alice@example.com',     role: 'user',   balance: 150    },
+    { id: 3, username: 'bob',   password: await bcrypt.hash('ilovecats42', SALT_ROUNDS), email: 'bob@example.com',        role: 'user',   balance: 75.50  },
+    { id: 4, username: 'carol', password: await bcrypt.hash('qwerty123',   SALT_ROUNDS), email: 'carol@example.com',      role: 'user',   balance: 200    },
   ];
   store.products = [
     { id: 1, name: 'Laptop Pro',          price: 999.99, description: 'High-performance laptop for professionals', stock: 10 },
@@ -63,7 +63,7 @@ const db = {
   },
 
   createUser(username, password, email, cb) {
-    if (store.users.find(u => u.username === username)) {
+    if (store.users.some(u => u.username === username)) {
       return cb(new Error('Username already taken'));
     }
     bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {

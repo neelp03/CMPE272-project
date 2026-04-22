@@ -67,7 +67,7 @@ router.post(
     const { name, price, stock = 0 } = req.body;
     const description = sanitize(req.body.description || '');
 
-    db.createProduct(name, parseFloat(price), description, parseInt(stock, 10), (err, id) => {
+    db.createProduct(name, Number.parseFloat(price), description, Number.parseInt(stock, 10), (err, id) => {
       if (err) return res.status(500).json({ error: 'Internal server error' });
       res.status(201).json({ id, name, price, description, stock });
     });
@@ -91,7 +91,7 @@ router.put(
     const description = sanitize(req.body.description || '');
     const { id } = req.params;
 
-    db.updateProduct(id, name, parseFloat(price), description, parseInt(stock, 10), (err, changes) => {
+    db.updateProduct(id, name, Number.parseFloat(price), description, Number.parseInt(stock, 10), (err, changes) => {
       if (err) return res.status(500).json({ error: 'Internal server error' });
       res.json({ updated: changes });
     });

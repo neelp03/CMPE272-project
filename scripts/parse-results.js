@@ -16,9 +16,9 @@
  *   results/combined-results.json  (also copied to REPORTS_DIR)
  */
 
-const fs   = require('fs');
-const path = require('path');
-const { randomUUID } = require('crypto');
+const fs   = require('node:fs');
+const path = require('node:path');
+const { randomUUID } = require('node:crypto');
 
 // ── Paths ──────────────────────────────────────────────────────────────────
 const ROOT        = path.join(__dirname, '..');
@@ -33,7 +33,7 @@ function readJson(filename) {
   const file = path.join(REPORTS_DIR, filename);
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (_) {
+  } catch (err) {
     return null;
   }
 }
@@ -48,7 +48,7 @@ function normSeverity(raw) {
 }
 
 function riskCodeToSeverity(rc) {
-  const n = parseInt(rc || '0', 10);
+  const n = Number.parseInt(rc || '0', 10);
   if (n >= 3) return 'critical';
   if (n === 2) return 'high';
   if (n === 1) return 'medium';
@@ -89,7 +89,10 @@ function parseNpmAudit(data) {
   const meta = data.metadata?.vulnerabilities || {};
   const hasCritical = (meta.critical || 0) > 0;
   const hasHigh     = (meta.high     || 0) > 0;
-  const status = hasCritical ? 'failed' : hasHigh ? 'warning' : findings.length ? 'warning' : 'passed';
+  let status = 'passed';
+  if (hasCritical)          status = 'failed';
+  else if (hasHigh)         status = 'warning';
+  else if (findings.length) status = 'warning';
   return { status, findings };
 }
 
@@ -114,7 +117,10 @@ function parseSonar(data) {
 
   const hasCritical = findings.some(f => f.severity === 'critical');
   const hasHigh     = findings.some(f => f.severity === 'high');
-  const status = hasCritical ? 'failed' : hasHigh ? 'warning' : findings.length ? 'warning' : 'passed';
+  let status = 'passed';
+  if (hasCritical)          status = 'failed';
+  else if (hasHigh)         status = 'warning';
+  else if (findings.length) status = 'warning';
   return { status, findings };
 }
 
@@ -139,7 +145,10 @@ function parseTrivy(data) {
 
   const hasCritical = findings.some(f => f.severity === 'critical');
   const hasHigh     = findings.some(f => f.severity === 'high');
-  const status = hasCritical ? 'failed' : hasHigh ? 'warning' : findings.length ? 'warning' : 'passed';
+  let status = 'passed';
+  if (hasCritical)          status = 'failed';
+  else if (hasHigh)         status = 'warning';
+  else if (findings.length) status = 'warning';
   return { status, findings };
 }
 
@@ -158,7 +167,7 @@ function parseZap(data) {
         location:    (alert.instances?.[0]?.uri) || site['@name'] || 'unknown',
         status:      statusForSeverity(sev),
         description: alert.desc
-          ? alert.desc.replace(/<[^>]+>/g, '').trim()
+          ? alert.desc.replaceAll(/<[^>]+>/g, '').trim()
           : 'No description available',
       });
     });
@@ -166,7 +175,10 @@ function parseZap(data) {
 
   const hasCritical = findings.some(f => f.severity === 'critical');
   const hasHigh     = findings.some(f => f.severity === 'high');
-  const status = hasCritical ? 'failed' : hasHigh ? 'warning' : findings.length ? 'warning' : 'passed';
+  let status = 'passed';
+  if (hasCritical)          status = 'failed';
+  else if (hasHigh)         status = 'warning';
+  else if (findings.length) status = 'warning';
   return { status, findings };
 }
 

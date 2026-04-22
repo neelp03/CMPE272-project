@@ -14,10 +14,10 @@ const app = express();
 app.use(helmet());
 
 // FIX for VULN-03: explicit CORS allowlist (no wildcard, no credentials leak)
-const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',');
+const ALLOWED_ORIGINS = new Set((process.env.CORS_ORIGINS || 'http://localhost:5173').split(','));
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (!origin || ALLOWED_ORIGINS.has(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
