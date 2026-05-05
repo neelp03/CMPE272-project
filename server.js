@@ -1,81 +1,54 @@
 'use strict';
 
-require('dotenv').config();
+// ═══════════════════════════════════════════════════════════════
+//  Intentionally Vulnerable Express API — DevSecOps Demo
+//  !!  FOR EDUCATIONAL PURPOSES ONLY !!
+//
+//  Vulnerability index (13 total):
+//   VULN-01  Hardcoded JWT secret                   config.js:8
+//   VULN-02  Hardcoded credentials & cloud keys     config.js:11-16
+//   VULN-03  Insecure CORS (all origins + creds)    server.js:27
+//   VULN-04  SQL injection — login                  routes/auth.js:22
+//   VULN-05  SQL error leaks full query             routes/auth.js:27
+//   VULN-06  IDOR — no ownership check on /users/:id routes/users.js:18
+//   VULN-07  Sensitive data exposure (passwords)    routes/users.js:9
+//   VULN-08  SQL injection — product search         routes/products.js:14
+//   VULN-09  Stored XSS — unescaped HTML in desc    routes/products.js:32
+//   VULN-10  Path traversal — arbitrary file read   routes/files.js:14
+//   VULN-11  Command injection — ping utility       routes/admin.js:18
+//   VULN-12  Missing auth on admin endpoints        routes/admin.js:6
+//   VULN-13  Insecure Dockerfile (EOL image, root)  Dockerfile
+// ═══════════════════════════════════════════════════════════════
 
 const express    = require('express');
-const helmet     = require('helmet');
 const cors       = require('cors');
 const bodyParser = require('body-parser');
-const { PORT }   = require('./config');
 
 const app = express();
 
-// FIX for VULN-13: helmet adds secure HTTP headers
-// Additional directives address ZAP findings: CSP fallback, Permissions-Policy
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc:     ["'self'"],
-      scriptSrc:      ["'self'"],
-      styleSrc:       ["'self'"],
-      imgSrc:         ["'self'"],
-      connectSrc:     ["'self'"],
-      fontSrc:        ["'self'"],
-      objectSrc:      ["'none'"],
-      frameAncestors: ["'none'"],
-      formAction:     ["'self'"],
-      baseUri:        ["'self'"],
-    },
-  },
-  permissionsPolicy: {
-    features: {
-      camera:      [],
-      microphone:  [],
-      geolocation: [],
-      payment:     [],
-    },
-  },
-}));
+// VULN-03: Wildcard CORS with credentials — allows any origin to make
+// credentialed requests, defeating Same-Origin Policy protections.
+app.use(cors({ origin: '*', credentials: true }));
 
-// No-cache for all API responses (ZAP: Storable and Cacheable Content)
-app.use((_req, res, next) => {
-  res.set('Cache-Control', 'no-store');
-  next();
-});
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// FIX for VULN-03: explicit CORS allowlist (no wildcard, no credentials leak)
-const ALLOWED_ORIGINS = new Set((process.env.CORS_ORIGINS || 'http://localhost:5173').split(','));
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.has(origin)) return cb(null, true);
-    cb(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-}));
-
-app.use(bodyParser.json({ limit: '10kb' }));
-app.use(bodyParser.urlencoded({ extended: false, limit: '10kb' }));
-
-// Routes
+// Mount route handlers
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/users',    require('./routes/users'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/files',    require('./routes/files'));
 app.use('/api/admin',    require('./routes/admin'));
 
-// Health check
+// Health / root
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.get('/',       (_req, res) => res.json({
-  message: 'Fixed API — DevSecOps Demo',
-  version: '2.0.0',
+  message: 'Vulnerable API — DevSecOps Demo',
+  version: '1.0.0',
+  endpoints: ['/api/auth', '/api/users', '/api/products', '/api/files', '/api/admin'],
 }));
 
-// FIX for stack trace leakage: generic error handler, no internals exposed
-// eslint-disable-next-line no-unused-vars
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+const { PORT } = require('./config');
+app.listen(PORT, () => console.log(`[server] listening on http://localhost:${PORT}`));
 
-app.listen(PORT, () => console.log(`[app-fixed] listening on port ${PORT}`));
 module.exports = app;
